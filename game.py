@@ -5,6 +5,7 @@ from score import Score
 from ball import Ball
 from sounds import *
 from pygame.locals import *
+import math
 
 class Game:
 
@@ -26,6 +27,50 @@ class Game:
         self.draw_game()
         point.play()
         pygame.time.delay(500)
+
+    
+    def bounce_on_rect(self, rect):
+        overlap = self.ball.hitbox.clip(rect)
+
+        if overlap.width >= overlap.height:
+            self.ball.bounce("horizontal")
+        if overlap.width <= overlap.height:
+            self.ball.bounce("vertical")
+
+
+    def check_player_collision(self):
+        if self.ball.hitbox.colliderect(self.player1.rect):
+            self.bounce_on_rect(self.player1.rect)
+            return True
+        elif self.ball.hitbox.colliderect(self.player2.rect):
+            self.bounce_on_rect(self.player2.rect)
+            return True
+        return False
+
+    def check_window_collision(self):
+        rep = False
+        bounds = self.wnd.get_rect()
+        if self.ball.x - self.ball.size/2 < bounds.left:
+            self.score.P2 += 1
+            self.reset_game()
+            rep = True
+        elif self.ball.x + self.ball.size/2 > bounds.right:
+            self.score.P1 += 1
+            self.reset_game()
+            rep = True
+        if self.ball.y - self.ball.size/2 < bounds.top or self.ball.y + self.ball.size/2 > bounds.bottom:
+            self.ball.bounce("horizontal")
+            rep = True
+        return rep
+
+    def check_collisions(self):
+        if self.check_player_collision():
+            collision.play()
+            return True
+        if self.check_window_collision():
+            collision.play()
+            return True
+        return False
 
     def draw_game(self):
         pygame.draw.rect(self.wnd, "black", Rect(0, 0, WIDTH, HEIGTH))
@@ -59,5 +104,7 @@ class Game:
         while not self.stop_main_loop:
             clock.tick(TIME_RATE)
             self.handle_inputs()
-            self.ball.step(self.player1.rect, self.player2.rect, self.reset_game, self.score)
+            self.ball.step()
+            if self.check_collisions():
+                self.ball.move_back()
             self.draw_game()
